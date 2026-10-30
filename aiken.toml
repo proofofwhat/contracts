@@ -1,0 +1,17 @@
+name = "proofofwhat/contracts"
+version = "1.0.0"
+compiler = "v1.1.24"
+plutus = "v3"
+description = "Aiken contracts for Proof of What?"
+
+[repository]
+user = "proofofwhat"
+project = "contracts"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v4.0.0"
+source = "github"
+
+[config]

@@ -1,0 +1,10 @@
+Proof of What? (WHAT) — node software
+Copyright 2026 proofofwhat
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+This product includes software developed as part of:
+  - aiken-lang/stdlib (https://github.com/aiken-lang/stdlib), Apache-2.0
+
+`whitepaper.md` is documentation rather than code and carries the same licence
+as the rest of this repository.
