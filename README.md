@@ -56,7 +56,7 @@ pinned here and worth checking if a hash ever disagrees:
 
 | | | |
 | -- | -- | -- |
-| Aiken | `v1.1.24` | `aiken.toml`, and `aiken --version` should report `v1.1.24+bacbeb3` |
+| Aiken | `v1.1.24` | `aiken.toml`. The committed code was built with `v1.1.24+bacbeb3`, which is what `aiken --version` reported for that release |
 | Plutus version | `v3` | `aiken.toml` |
 | `aiken-lang/stdlib` | `v4.0.0` | `aiken.toml` and `aiken.lock` |
 
@@ -76,7 +76,8 @@ The validator is parameterised by three values, so every chain gets its own
 script and its own policy id. Applying them is how you check that a policy id
 somebody handed you is really this code running on the parameters they claim.
 
-Cardano's **Preview** testnet, the chain currently running:
+The chain this code was published against, on Cardano's **Preview** testnet,
+which had its genesis on 29 October 2026:
 
 | | |
 | -- | -- |
@@ -142,9 +143,8 @@ just derived, and cannot be restated later.
 
 ## Mining it
 
-Nothing here is a mining client. The off-chain software a miner needs — a
-Stratum server, the Cardano transaction builders, the node that submits blocks
-— is still in development.
+Nothing here is a mining client. This repository is the on-chain half: the
+rules a block must satisfy, and the paper that specifies them.
 
 The protocol a client has to implement is specified regardless: section 4 of
 the paper is the header and the coinbase commitment, section 5 is what a block

@@ -218,9 +218,12 @@ one, which genesis cannot.
 
 ### Budgets
 
-From the `budget_*` tests in `validators/what.ak`, as mem against the devnet's
-10M per-transaction limit (14M on mainnet). They do not model the ScriptContext
-overhead, so treat them as upper bounds on what fits:
+Reported by the `budget_*` tests in `validators/what.ak` under `aiken check`.
+These are a reading, not an assertion: the tests check that each transaction
+validates, not that it stays under a figure, so run them yourself rather than
+trusting the table. Mainnet allows 14M mem per transaction, and a local test
+network is usually configured lower. They do not model the ScriptContext
+overhead either, so treat them as lower bounds on the real cost:
 
 | transaction | mem | cpu |
 |---|---|---|
@@ -246,9 +249,10 @@ The pow limit is `(2^23 - 1) * 2^232` — a full-width nBits mantissa at the
 loosest exponent that still fits 256 bits, which is Bitcoin regtest's
 `ffff7f20`: if nobody is hashing, the first hash that shows up
 should win (`lib/what/parameters.ak` explains why there is no Bitcoin-style
-floor). `initial_target` is the launch-day judgement; the devnet starts at the
-pow limit, where about every other hash is a block and the rule tightens from
-there.
+floor). `initial_target` is the launch-day judgement. The tests in this repository
+start at the pow limit, where about every other hash is a block and the rule
+tightens from there, which is also what makes a low-difficulty test network
+CPU-mineable.
 
 `header_1` in `validators/what.ak` is a genuinely mined block at the pow limit,
 with the chain tag, height 1, a test payout address and `NoDatum` committed in
@@ -257,11 +261,11 @@ one.
 
 ## Prior art
 
-Fortuna (`orbistry/fortuna`, TUNA) is the closest prior art: the same minimal
-mechanism — a proof-of-work lottery over a Cardano state-thread UTxO — reached
-from the thesis rather than from Fortuna's code. No code here derives from it,
-though it shares some of Fortuna's vocabulary because it was a useful
-comparison when auditing use cases.
+Fortuna (`orbistry/fortuna`, TUNA, <https://github.com/orbistry/fortuna>) is
+the closest prior art: the same minimal mechanism — a proof-of-work lottery over a Cardano
+state-thread UTxO — reached from the thesis rather than from Fortuna's code. No
+code here derives from it, though it shares some of Fortuna's vocabulary, which
+was already the vocabulary for this kind of design on Cardano.
 
 The design above is the whole of what this validator does, so the differences
 fall out of it rather than needing a list. Two are worth naming because they

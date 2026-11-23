@@ -43,8 +43,8 @@ use what/types.{
 /// `initial_target` is T0: the base target the genesis datum starts from.
 /// It is a parameter rather than a constant because it is a launch-day
 /// judgement about how much hashpower will actually show up (whitepaper
-/// section 6), and because it lets a devnet run the same code at a target a
-/// CPU can find. Like the other two parameters it is baked into the script
+/// section 6), and because it lets a low-difficulty test network run the same
+/// code at a target a CPU can find. Like the other two parameters it is baked into the script
 /// hash, so it cannot be changed without changing the chain's identity.
 validator what(
   genesis_utxo: OutputReference,
@@ -203,7 +203,8 @@ fn block(
   )
 
   // A reference script on the tip is a griefer's way to raise the next
-  // block's fee by a quarter of an ada (F-10).
+  // block's fee by a quarter of an ada, every block, for as long as the chain
+  // runs.
   expect reference_script == None
 
   // Cardano's clock. The validity-interval start is attested by the stake
@@ -496,7 +497,7 @@ const thief = #"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 const junk_policy = #"1111111111111111111111111111111111111111111111111111111f"
 
 /// Height 0, `miner_address`, `datum_hash(NoDatum)`, and the headline as its
-/// extranonce, as the genesis tool builds it.
+/// extranonce, in the layout `lib/what/coinbase.ak` documents.
 const genesis_coinbase =
   #"57484154000000000029d8799fd8799f581c00112233445566778899aabbccddeeff00112233445566778899aabbffd87a80ff923918e403bf43c34b4ef6b48eb2ee04babed17320d8d1b9ff9ad086e86f44ec50726f6f66206f6620576861743f2061736b732077686572652074686520776f726b20676f6573207768656e2061207365636f6e642062757965722061707065617273"
 
@@ -519,8 +520,7 @@ const header_1 =
 
 const reward_1 = 5_000_000_000
 
-/// The devnet and the tests both start at the pow limit, the easiest target
-/// the protocol allows.
+/// The tests start at the pow limit, the easiest target the protocol allows.
 const test_initial_target = pow_limit()
 
 const t0 = 1_800_000_000_000
@@ -911,8 +911,9 @@ test rejects_a_block_that_mints_nothing() fail {
 }
 
 test rejects_a_tip_datum_that_does_not_move_the_base_target() fail {
-  // A fast block has to tighten the base. Carrying it forward unchanged --
-  // which is what the old absolute-anchor rule did -- is now invalid.
+  // A fast block has to tighten the base. Every block moves it: the datum the
+  // block writes must carry the base the law gives for the interval it closed,
+  // so carrying the inherited one forward unchanged is refused.
   let unchanged = State {
     ..next_state(header.hash(header_1), t1),
     base_target: test_initial_target,
@@ -1408,8 +1409,8 @@ test a_reward_to_this_script_is_not_refused() {
 // plain function: anyone may spend an account in a
 // block, provided the block mints WHAT, some output at the account's own
 // address holds WHAT, and the account itself holds WHAT. It never ships. These
-// tests prove the WHAT validator leaves room for one, and that path (b) is
-// safe on top of the six rules.
+// tests prove the WHAT validator leaves room for one, and that the path above
+// is safe on top of the six rules.
 
 fn account_block_path(own_ref: OutputReference, tx: Transaction) -> Bool {
   expect Some(Input { output: own_input, .. }) = find_input(tx.inputs, own_ref)
@@ -1538,17 +1539,18 @@ fn sweeping_tx() -> Transaction {
 
 test another_owners_account_cannot_be_swept_into_a_block() fail {
   // The WHAT validator alone allows it: that input is not at the committed
-  // address, so to the six rules its WHAT is a gift to the winner. Path (b)
-  // is what refuses it, because the only WHAT output is not at that account's
-  // address.
+  // address, so to the six rules its WHAT is a gift to the winner. The account
+  // contract is what refuses it, because the only WHAT output is not at that
+  // account's address.
   and {
     pays(commitment(wallet(miner_vkh), NoDatum), sweeping_tx()),
     account_block_path(other_ref, sweeping_tx()),
   }
 }
 
-test another_owners_account_is_refused_by_path_b_alone() {
-  // The twin: the six rules pass and path (b) fails, which is the claim above.
+test another_owners_account_is_refused_by_the_account_contract_alone() {
+  // The twin: the six rules pass and the account contract fails, which is the
+  // claim above.
   and {
     pays(commitment(wallet(miner_vkh), NoDatum), sweeping_tx()),
     !account_block_path(other_ref, sweeping_tx()),
@@ -1557,7 +1559,7 @@ test another_owners_account_is_refused_by_path_b_alone() {
 
 test an_empty_account_cannot_be_spent_by_a_block() {
   // An account holding no WHAT is outside rule 2, so nothing would protect
-  // its ada or its NFT; path (b) refuses it instead.
+  // its ada or its NFT; the account contract refuses it instead.
   let tx =
     payout_tx(
       [input(prior_ref, account_of(miner_vkh, 0))],
@@ -1571,7 +1573,8 @@ test an_empty_account_cannot_be_spent_by_a_block() {
 
 test rejects_a_tip_output_with_a_reference_script() fail {
   // A 16 KB script attached to the tip raises the next block's fee by about a
-  // quarter of an ada, every block, forever (F-10).
+  // quarter of an ada, every block, forever -- and the tip is spent by every
+  // block, so there is no later transaction that could clean it up.
   let tx = Transaction {
     ..block_1_tx(),
     outputs: [
@@ -2100,11 +2103,13 @@ fn padding(chunks: Int) -> ByteArray {
 
 // ### Encodings
 //
-// The off-chain node builds these bytes independently, from its own encoder. A
-// different-but-equivalent encoding on either side is a datum or redeemer the
-// validator refuses, so: one hex literal, asserted from both sides.
-// the node's own test suite holds the other half. The datum commitment is pinned
-// in `lib/what/coinbase.ak`.
+// Mining software builds these bytes from its own encoder, and this validator
+// compares them byte for byte. An encoding that is equivalent but different --
+// definite-length arrays where indefinite-length ones are expected, say -- is a
+// datum or redeemer the validator refuses, and a block nobody can be paid for.
+// So each one is pinned here as a single hex literal: whatever produces these
+// bytes interoperates, and whatever does not, does not. The datum commitment is
+// pinned the same way in `lib/what/coinbase.ak`.
 
 test the_tip_datum_is_pinned() {
   let state = State {

@@ -26,9 +26,10 @@ pub const target_spacing = 600_000
 
 /// Half-life, in milliseconds: how long an overdue block takes to double the
 /// allowed target, and the gain of the per-block update. Whitepaper section 6.
-/// A sweep of 5 minutes to 1 hour favours the short end -- the
-/// mean holds throughout while the interval tail tightens as this falls -- so
-/// 10 minutes, equal to the target spacing, is the working value.
+/// It sets how hard the controller leans, not where it settles: the mean
+/// interval holds at the target whatever this is, while a shorter half-life
+/// tightens the spread of intervals and moves the target more often. Ten
+/// minutes, equal to the target spacing, is the value in force.
 pub const half_life = 600_000
 
 /// Easiest target the protocol will ever allow: `0x7fffff * 256^29`, which is
@@ -64,11 +65,13 @@ pub fn reference_initial_target() -> Int {
 
 /// Beyond this many half-lives either side of schedule the exponential is
 /// clamped instead of evaluated. Every target is below 2^255 and the base is at
-/// least 1, so from 255 shifts up the law lands on the pow limit anyway: the
-/// cutoff never changes a result, it only skips the arithmetic. At 64 it did
-/// change one -- a base tighter than about 2^191 jumped straight to the pow
-/// limit after a long stall, and the catch-up ran ahead of schedule. The
-/// price is integers of about 530 bits on that path.
+/// least 1, so from 255 shifts up the law lands on the pow limit anyway: at
+/// this value the clamp never changes a result, it only skips the arithmetic.
+/// It has to be this high. Any cutoff low enough to bite sends a tight base
+/// straight to the pow limit after a long stall instead of following the law,
+/// which then takes more blocks to climb back than the stall cost -- the tests
+/// below pin both halves of that. The price of 256 is integers of about 530
+/// bits on the path where the clamp would have fired.
 pub const max_shift = 256
 
 /// Longest coinbase commitment the validator will parse, in bytes.
@@ -78,6 +81,6 @@ pub const max_coinbase_length = 256
 pub const max_address_length = 128
 
 /// Widest transaction validity interval accepted, in milliseconds. Bounds how
-/// stale the timestamp a block records can be. Whitepaper sections 5 and 6:
-/// two minutes.
+/// stale the timestamp a block records can be. Whitepaper section 5: two
+/// minutes.
 pub const max_validity_span = 120_000

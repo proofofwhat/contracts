@@ -1,11 +1,16 @@
 //// Cross-implementation parity vectors. GENERATED -- do not edit by hand.
-//// in the Node package above — do not edit by hand.
 ////
-//// Every expected value here was computed by an independent implementation
-//// of the same rule, in TypeScript, and emitted as these tests. If
-//// these tests fail, the off-chain miner and the on-chain validator disagree
-//// about what target is allowed, which means blocks built off-chain would be
-//// rejected. Fix the disagreement; do not regenerate to make it pass.
+//// Mining software has to decide what target to work against, and this
+//// validator decides whether to accept the result. Those are two
+//// implementations of one rule, and a disagreement of a single unit is a
+//// rejected block and a miner's work thrown away -- silently, because the
+//// failure is a refused transaction rather than an error.
+////
+//// So the rule is evaluated independently, outside this repository, and the
+//// answers are emitted here as tests. `aiken check` then asserts that
+//// `what/difficulty` agrees with every one of them. If these tests fail, the
+//// two implementations have diverged: fix the disagreement rather than
+//// regenerating the file to make it pass.
 
 use what/difficulty.{allowed_target, next_base_target}
 

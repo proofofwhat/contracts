@@ -163,8 +163,9 @@ test the_shift_cutoff_never_changes_a_result() {
 }
 
 test a_tight_base_follows_the_law_past_64_half_lives() {
-  // 64 half-lives overdue, a base of 2^170 loosens to 2^234 --
-  // not to the pow limit, which is what a cutoff at 64 returned.
+  // 64 half-lives overdue, a base of 2^170 loosens to 2^234 -- the law
+  // followed exactly. A clamp low enough to bite here would return the pow
+  // limit instead.
   let stall = target_spacing + 64 * half_life
 
   and {
@@ -185,7 +186,10 @@ test the_law_is_exact_right_up_to_the_pow_limit() {
 test a_catch_up_after_a_long_stall_cannot_run_ahead() {
   // A stall of 64 half-lives past due, closed by one block, then instant
   // blocks. Each halves the base, so getting back to 2^170 takes 64 of them:
-  // one per missed slot, not 84 as the cutoff at 64 gave (2^254 down to 2^170).
+  // one per half-life the stall ran over, and no more. Had the stall been
+  // clamped to the pow limit, the climb back would be 84 blocks (2^254 down to
+  // 2^170) -- a catch-up longer than the stall, which is the behaviour
+  // `max_shift` is set high enough to avoid.
   let after_stall = next_base_target(pow2(170), target_spacing + 64 * half_life)
   let after_catch_up =
     list.foldl(list.range(1, 64), after_stall, fn(_, t) { next_base_target(t, 0) })

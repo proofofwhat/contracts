@@ -125,7 +125,7 @@ test rejects_an_empty_address() fail {
 }
 
 test rejects_a_missing_datum_commitment() fail {
-  // The old format: an address and nothing after it.
+  // An address with nothing after it: no datum commitment at all.
   parse(#"574841540000002a0004deadbeef").height == 42
 }
 
@@ -136,9 +136,9 @@ test rejects_a_truncated_datum_commitment() fail {
   ).height == 42
 }
 
-// The datum commitment is the second permanent encoding after the address:
-// the off-chain node computes these bytes on its own, and its own tests assert
-// the same literals.
+// The datum commitment is the second permanent encoding after the address, and
+// is pinned the same way: mining software computes these bytes from its own
+// encoder, so the literals below are what it has to agree with.
 
 test no_datum_serialises_as_constructor_zero() {
   builtin.serialise_data(NoDatum) == #"d87980"
